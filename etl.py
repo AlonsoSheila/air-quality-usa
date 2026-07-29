@@ -138,7 +138,7 @@ def load_meteo_for_events(regions, events, data_dir=DATA_DIR):
         temp_fname = data_dir / f"daily_TEMP_{year}.csv"
 
         if wind_fname.exists():
-            w = pd.read_csv(wind_fname)
+            w = pd.read_csv(wind_fname, dtype={"Event Type": "string"}, low_memory=False)
             w = w[w["CBSA Name"].isin(cbsa_to_city.keys())].copy()
             w["city"] = w["CBSA Name"].map(cbsa_to_city)
             w["date"] = pd.to_datetime(w["Date Local"])
@@ -147,7 +147,7 @@ def load_meteo_for_events(regions, events, data_dir=DATA_DIR):
             print(f"  ⚠ WARNING: no existe {wind_fname}")
 
         if temp_fname.exists():
-            t = pd.read_csv(temp_fname)
+            t = pd.read_csv(temp_fname, dtype={"Event Type": "string"}, low_memory=False)
             t = t[t["CBSA Name"].isin(cbsa_to_city.keys())].copy()
             t["city"] = t["CBSA Name"].map(cbsa_to_city)
             t["date"] = pd.to_datetime(t["Date Local"])

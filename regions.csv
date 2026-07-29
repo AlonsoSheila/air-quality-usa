@@ -1,0 +1,7 @@
+city,file_key,cbsa_name,state,mechanism,color
+New York,NewYork,"New York-Newark-Jersey City, NY-NJ-PA",NY,Traffic/heating + transported wildfire smoke,steelblue
+California,California,"Los Angeles-Long Beach-Anaheim, CA",CA,Photochemical smog + local wildfires,darkorange
+Houston,Houston,"Houston-The Woodlands-Sugar Land, TX",TX,Petrochemical industry + heat,seagreen
+Denver,Denver,"Denver-Aurora-Lakewood, CO",CO,Valley thermal inversion,firebrick
+Chicago,Chicago,"Chicago-Naperville-Elgin, IL-IN-WI",IL,Industrial/agricultural mix,purple
+Seattle,Seattle,"Seattle-Tacoma-Bellevue, WA",WA,Clean air interrupted by transported wildfire smoke,teal

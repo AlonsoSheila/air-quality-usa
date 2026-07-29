@@ -1,0 +1,8 @@
+city,event_year,event_month,event_label,defining_parameter
+New York,2023,6,Quebec wildfire smoke,PM2.5
+Chicago,2023,6,Quebec wildfire smoke,PM2.5
+California,2023,7,Summer ozone cluster,Ozone
+Houston,2023,9,Summer ozone cluster,Ozone
+Denver,2021,7,Summer ozone cluster,Ozone
+Seattle,2020,9,Pacific NW wildfire smoke,PM2.5
+Seattle,2022,10,Wildfire smoke (worst day on record),PM2.5

@@ -47,7 +47,7 @@ def normalize_pollutant_file(df, pollutant, city):
     """
     value_col = POLLUTANT_COLUMN[pollutant]
     if value_col not in df.columns:
-        return pd.DataFrame(columns=["date", "city", "pollutant", "value", "unit", "county", "aqi"])
+        return pd.DataFrame(columns=["date", "city", "pollutant", "value", "unit", "county", "aqi", "site_name", "latitude", "longitude"])
 
     out = pd.DataFrame({
         "date": pd.to_datetime(df["Date"]),
@@ -57,6 +57,9 @@ def normalize_pollutant_file(df, pollutant, city):
         "unit": POLLUTANT_UNIT[pollutant],
         "county": df.get("County"),
         "aqi": pd.to_numeric(df.get("Daily AQI Value"), errors="coerce"),
+        "site_name": df.get("Local Site Name"),
+        "latitude": pd.to_numeric(df.get("Site Latitude"), errors="coerce"),
+        "longitude": pd.to_numeric(df.get("Site Longitude"), errors="coerce"),
     })
     out = out.dropna(subset=["value"])
     out = out[out["value"] >= 0]  # descarta negativos (error de sensor)
@@ -84,7 +87,7 @@ def load_pollutant(pollutant, city, file_key, years=YEARS, data_dir=DATA_DIR):
                   f"revisa si la columna '{POLLUTANT_COLUMN[pollutant]}' existe en ese archivo")
         frames.append(norm)
     if not frames:
-        return pd.DataFrame(columns=["date", "city", "pollutant", "value", "unit", "county", "aqi"])
+        return pd.DataFrame(columns=["date", "city", "pollutant", "value", "unit", "county", "aqi", "site_name", "latitude", "longitude"])
     return pd.concat(frames, ignore_index=True)
 
 

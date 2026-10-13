@@ -4,7 +4,7 @@ An interactive Streamlit dashboard exploring air quality trends across major U.S
 
 **Live app:** [air-quality-usa.streamlit.app](https://air-quality-usa.streamlit.app)
 
-![Dashboard screenshot](screenshot.png)
+![Dashboard screenshot](images/screenshot.png)
 
 ---
 

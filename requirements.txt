@@ -6,3 +6,4 @@ pyarrow
 scipy
 python-dotenv
 jinja2
+matplotlib

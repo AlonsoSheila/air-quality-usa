@@ -5,3 +5,4 @@ plotly
 pyarrow
 scipy
 python-dotenv
+jinja2

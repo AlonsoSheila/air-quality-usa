@@ -1,12 +1,12 @@
 """
 scripts/build_dataset.py
 
-Lee todos los CSV crudos de data/, los normaliza con etl.py, y genera:
-  - data/processed/air_quality_usa.parquet   (PM2.5, O3, PM10 diario, 6 ciudades)
-  - data/processed/aqi_by_cbsa.parquet       (AQI compuesto diario, 6 ciudades)
-  - data/processed/meteo_events.parquet      (viento+temp, solo meses de evento)
+Reads every raw CSV in data/, normalizes it with etl.py, and writes:
+  - data/processed/air_quality_usa.parquet   (daily PM2.5, O3, PM10, 6 cities)
+  - data/processed/aqi_by_cbsa.parquet       (daily composite AQI, 6 cities)
+  - data/processed/meteo_events.parquet      (wind + temperature, event months only)
 
-Ejecutar desde la raíz del repo:
+Run from the repo root:
     python scripts/build_dataset.py
 """
 
@@ -24,23 +24,23 @@ def main():
     regions = etl.load_regions("regions.csv")
     events = etl.load_events("events.csv")
 
-    print("Cargando PM2.5 / O3 / PM10 para las 6 ciudades...")
+    print("Loading PM2.5 / O3 / PM10 for the 6 cities...")
     pollutants_df = etl.load_all_pollutants(regions)
-    print(f"  -> {len(pollutants_df):,} filas")
+    print(f"  -> {len(pollutants_df):,} rows")
 
-    print("\nCargando AQI compuesto por CBSA...")
+    print("\nLoading composite AQI by CBSA...")
     aqi_df = etl.load_aqi_by_cbsa(regions)
-    print(f"  -> {len(aqi_df):,} filas")
+    print(f"  -> {len(aqi_df):,} rows")
 
-    print("\nCargando viento/temperatura para los meses de evento...")
+    print("\nLoading wind/temperature for the event months...")
     meteo_df = etl.load_meteo_for_events(regions, events)
-    print(f"  -> {len(meteo_df):,} filas")
+    print(f"  -> {len(meteo_df):,} rows")
 
     pollutants_df.to_parquet(out_dir / "air_quality_usa.parquet", index=False)
     aqi_df.to_parquet(out_dir / "aqi_by_cbsa.parquet", index=False)
     meteo_df.to_parquet(out_dir / "meteo_events.parquet", index=False)
 
-    print(f"\nListo. Archivos guardados en {out_dir}/")
+    print(f"\nDone. Files saved to {out_dir}/")
 
 
 if __name__ == "__main__":

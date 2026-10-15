@@ -1,9 +1,14 @@
-streamlit
-pandas
+# Dashboard (app.py)
+streamlit>=1.51
+pandas>=2.1
 numpy
 plotly
 pyarrow
 scipy
-python-dotenv
-jinja2
 matplotlib
+jinja2
+
+# Notebook and data pipeline (air_quality_usa.ipynb, etl.py)
+python-dotenv
+requests
+seaborn

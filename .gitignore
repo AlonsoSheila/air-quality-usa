@@ -1,5 +1,10 @@
-data/external/
+# Secrets
 .env
+
+# Raw EPA downloads and cached Census data (large, regenerable; see README)
+data/*.csv
 data/external/
+
+# Python / Jupyter
 .ipynb_checkpoints/
 __pycache__/

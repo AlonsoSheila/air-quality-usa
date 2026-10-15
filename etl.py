@@ -1,16 +1,16 @@
 """
-etl.py — módulo compartido de carga y limpieza para el proyecto air-quality-usa.
+etl.py: shared loading and cleaning module for the air-quality-usa project.
 
-Usado tanto por los notebooks de análisis como por scripts/build_dataset.py
-(que genera el parquet final que consume el dashboard).
+Used by the analysis notebook and by scripts/build_dataset.py
+(which builds the final parquet files read by the dashboard).
 
-Espera que exista una carpeta `data/` con:
-  - {pollutant}_{year}_{City}.csv   -> pm25 / o3 / pm10, 2020-2026, 6 ciudades
-  - daily_aqi_by_cbsa_{year}.csv    -> archivo nacional, 2020-2026
-  - daily_WIND_{year}.csv           -> archivo nacional (solo años con eventos)
-  - daily_TEMP_{year}.csv           -> archivo nacional (solo años con eventos)
+Expects a `data/` folder containing the raw EPA downloads:
+  - {pollutant}_{year}_{City}.csv   -> pm25 / o3 / pm10, 2020-2026, 6 cities
+  - daily_aqi_by_cbsa_{year}.csv    -> national file, 2020-2026
+  - daily_WIND_{year}.csv           -> national file (only years with events)
+  - daily_TEMP_{year}.csv           -> national file (only years with events)
 
-y dos archivos de configuración en la raíz del repo: regions.csv, events.csv
+and two configuration files in the repo root: regions.csv, events.csv
 """
 
 import pandas as pd
@@ -40,10 +40,10 @@ def load_events(path="events.csv"):
 
 
 def normalize_pollutant_file(df, pollutant, city):
-    """Normaliza un CSV crudo de EPA (Download Daily Data) a un esquema común.
+    """Normalize a raw EPA CSV (Download Daily Data) to a common schema.
 
-    Devuelve un DataFrame vacío (no un error) si la columna esperada no
-    existe, para que el llamador pueda avisar en vez de fallar en silencio.
+    Returns an empty DataFrame (not an error) if the expected column is
+    missing, so the caller can warn instead of failing silently.
     """
     value_col = POLLUTANT_COLUMN[pollutant]
     if value_col not in df.columns:
@@ -62,29 +62,29 @@ def normalize_pollutant_file(df, pollutant, city):
         "longitude": pd.to_numeric(df.get("Site Longitude"), errors="coerce"),
     })
     out = out.dropna(subset=["value"])
-    out = out[out["value"] >= 0]  # descarta negativos (error de sensor)
+    out = out[out["value"] >= 0]  # drop negative values (sensor error)
     return out
 
 
 def load_pollutant(pollutant, city, file_key, years=YEARS, data_dir=DATA_DIR):
-    """Carga y concatena todos los años de un contaminante para una ciudad,
-    avisando en voz alta si algún año produce 0 filas (posible cambio de
-    nombre de columna en el CSV de origen, o archivo no descargado).
+    """Load and concatenate all years of one pollutant for one city,
+    warning loudly if a year produces 0 rows (possible column rename in
+    the source CSV, or a file that was not downloaded).
 
-    `file_key` es el nombre tal cual aparece en el archivo (ej. "NewYork",
-    sin espacio); `city` es el nombre bonito que se guarda en los datos
-    para mostrar (ej. "New York")."""
+    `file_key` is the name as it appears in the file name (e.g. "NewYork",
+    no space); `city` is the display name stored in the data
+    (e.g. "New York")."""
     frames = []
     for year in years:
         fname = data_dir / f"{pollutant}_{year}_{file_key}.csv"
         if not fname.exists():
-            print(f"  ⚠ WARNING: no existe {fname}, se omite ese año")
+            print(f"  ⚠ WARNING: {fname} does not exist, skipping that year")
             continue
         raw = pd.read_csv(fname)
         norm = normalize_pollutant_file(raw, pollutant, city)
         if len(norm) == 0:
-            print(f"  ⚠ WARNING: {fname.name} produjo 0 filas normalizadas — "
-                  f"revisa si la columna '{POLLUTANT_COLUMN[pollutant]}' existe en ese archivo")
+            print(f"  ⚠ WARNING: {fname.name} produced 0 normalized rows — "
+                  f"check that the column '{POLLUTANT_COLUMN[pollutant]}' exists in that file")
         frames.append(norm)
     if not frames:
         return pd.DataFrame(columns=["date", "city", "pollutant", "value", "unit", "county", "aqi", "site_name", "latitude", "longitude"])
@@ -92,7 +92,7 @@ def load_pollutant(pollutant, city, file_key, years=YEARS, data_dir=DATA_DIR):
 
 
 def load_all_pollutants(regions, pollutants=("pm25", "o3", "pm10"), years=YEARS, data_dir=DATA_DIR):
-    """Carga los 3 contaminantes para las 6 ciudades de regions.csv."""
+    """Load the 3 pollutants for the 6 cities listed in regions.csv."""
     frames = []
     for _, row in regions.iterrows():
         for pollutant in pollutants:
@@ -101,13 +101,13 @@ def load_all_pollutants(regions, pollutants=("pm25", "o3", "pm10"), years=YEARS,
 
 
 def load_aqi_by_cbsa(regions, years=YEARS, data_dir=DATA_DIR):
-    """Carga el AQI compuesto diario (archivo nacional) y filtra a las 6 CBSA."""
+    """Load the daily composite AQI (national file) and keep the 6 CBSAs."""
     cbsa_to_city = dict(zip(regions["cbsa_name"], regions["city"]))
     frames = []
     for year in years:
         fname = data_dir / f"daily_aqi_by_cbsa_{year}.csv"
         if not fname.exists():
-            print(f"  ⚠ WARNING: no existe {fname}")
+            print(f"  ⚠ WARNING: {fname} does not exist")
             continue
         raw = pd.read_csv(fname)
         raw = raw[raw["CBSA"].isin(cbsa_to_city.keys())].copy()
@@ -124,14 +124,14 @@ def load_aqi_by_cbsa(regions, years=YEARS, data_dir=DATA_DIR):
     found_cities = set(result["city"].unique())
     missing = set(regions["city"]) - found_cities
     if missing:
-        print(f"  ⚠ WARNING: sin datos de AQI por CBSA para: {missing}")
+        print(f"  ⚠ WARNING: no CBSA AQI data for: {missing}")
     return result
 
 
 def load_meteo_for_events(regions, events, data_dir=DATA_DIR):
-    """Carga viento y temperatura solo para los meses de evento listados en
-    events.csv (los archivos nacionales de meteorología son grandes, no
-    tiene sentido cargar años enteros que no se van a usar)."""
+    """Load wind and temperature only for the event months listed in
+    events.csv (the national weather files are large, so there is no
+    point loading whole years that will not be used)."""
     cbsa_to_city = dict(zip(regions["cbsa_name"], regions["city"]))
     years_needed = sorted(events["event_year"].unique())
 
@@ -147,7 +147,7 @@ def load_meteo_for_events(regions, events, data_dir=DATA_DIR):
             w["date"] = pd.to_datetime(w["Date Local"])
             wind_frames.append(w[["date", "city", "Parameter Name", "Arithmetic Mean", "Units of Measure"]])
         else:
-            print(f"  ⚠ WARNING: no existe {wind_fname}")
+            print(f"  ⚠ WARNING: {wind_fname} does not exist")
 
         if temp_fname.exists():
             t = pd.read_csv(temp_fname, dtype={"Event Type": "string"}, low_memory=False)
@@ -156,13 +156,13 @@ def load_meteo_for_events(regions, events, data_dir=DATA_DIR):
             t["date"] = pd.to_datetime(t["Date Local"])
             temp_frames.append(t[["date", "city", "Parameter Name", "Arithmetic Mean", "Units of Measure"]])
         else:
-            print(f"  ⚠ WARNING: no existe {temp_fname}")
+            print(f"  ⚠ WARNING: {temp_fname} does not exist")
 
     wind = pd.concat(wind_frames, ignore_index=True) if wind_frames else pd.DataFrame()
     temp = pd.concat(temp_frames, ignore_index=True) if temp_frames else pd.DataFrame()
     meteo = pd.concat([wind, temp], ignore_index=True)
 
-    # Filtra cada fila al mes de evento correspondiente a su ciudad+año
+    # Keep only the rows that fall in each city's event month and year
     keep_masks = []
     for _, ev in events.iterrows():
         mask = (

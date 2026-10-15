@@ -10,7 +10,7 @@ An interactive Streamlit dashboard and analytical notebook exploring PM2.5 and A
 
 ## Overview
 
-This project analyses daily PM2.5, PM10 and Ozone measurements for Los Angeles, Seattle, New York, Chicago, Denver and Houston — covering roughly 2,200 days per city (January 2020 through spring 2026; the AQI series end between 28 February and 1 June 2026 depending on the city, and the raw pollutant series run to late July 2026). It combines EPA monitoring records with meteorological event data to surface patterns, long-term trends, and risk-relevant insights for climate analytics, insurance and ESG portfolio screening.
+This project analyses daily PM2.5, PM10 and Ozone measurements for Los Angeles, Seattle, New York, Chicago, Denver and Houston — covering roughly 2,300 days per city (2,251 to 2,344 days of AQI data, January 2020 through spring 2026; the AQI series end between 28 February and 1 June 2026 depending on the city, and the raw pollutant series run to late July 2026). It combines EPA monitoring records with meteorological event data to surface patterns, long-term trends, and risk-relevant insights for climate analytics, insurance and ESG portfolio screening.
 
 Cities are identified by their EPA Core-Based Statistical Area (CBSA): for example, "California" in the internal data refers to the Los Angeles–Long Beach–Anaheim CBSA.
 
@@ -45,7 +45,7 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 
 | Tab | What it shows |
 |-----|---------------|
-| **Overview** | Mean AQI and % unhealthy days by city, AQI category breakdown, summary table and a risk scorecard (mean AQI, unhealthy days, WHO-guideline days, Mann-Kendall trend direction) |
+| **Overview** | Mean AQI and % unhealthy days by city, AQI category breakdown, summary table and a risk scorecard (share of days above AQI 150, PM2.5 98th percentile and mean, days above the WHO guideline, Mann-Kendall / Theil-Sen trend direction, primary driver) |
 | **Per-City Detail** | One city at a time: daily AQI with 30-day rolling mean, top 10 worst days, seasonal pattern by pollutant, year-by-month AQI heatmap |
 | **Trends** | Annual mean AQI by city with Mann-Kendall significance and Theil-Sen slope, plus the weekday-minus-weekend gap with 95% bootstrap confidence intervals |
 | **Events** | Documented high-AQI episodes (wildfire smoke, summer ozone) with surface wind context |
@@ -59,8 +59,8 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 
 ### Trend detection
 - **Mann-Kendall test** for monotonic trend detection, applied to annual mean AQI values (6 points, 2020–2025). Reported as significant at p < 0.05 and marginal at p < 0.10
-- **Theil-Sen slope** for robust trend magnitude estimation (median of pairwise slopes)
-- Both use the complete years 2020–2025 in the dashboard, the notebook and the executive reports; 2026 is excluded as a partial year (the AQI series end between February and June 2026) to avoid seasonal bias, for example for cities whose worst months are in autumn (Seattle, California)
+- **Theil-Sen slope** (dashboard only) for robust trend magnitude estimation (median of pairwise slopes)
+- The Mann-Kendall test uses the complete years 2020–2025 in the dashboard, the notebook and the executive report (the Theil-Sen slope in the dashboard uses the same years); 2026 is excluded as a partial year (the AQI series end between February and June 2026) to avoid seasonal bias, because it lacks the summer and autumn months when the worst days occur (ozone and wildfire seasons, e.g. Seattle and Los Angeles)
 
 ### Weekend effect
 - **Bootstrap 95% CI** (2,000 resamples, fixed seed 42) for the weekday vs. weekend mean AQI gap
@@ -75,6 +75,7 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 ### Health economic screening model
 - **Concentration-response function:** Pope et al. 2002 (ACS CPS-II cohort) — a 10 µg/m³ increase in long-term mean PM2.5 is associated with ~6% increase in all-cause mortality, applied here as 0.6%/µg/m³
 - **Value of Statistical Life (VSL):** USD 13.1 million (2023 USD), U.S. Department of Health and Human Services standard regulatory value (HHS, January 2024)
+- **Baseline mortality:** 833 deaths per 100,000 per year (CDC, 2022), applied uniformly to every city
 - **Threshold:** EPA 24-hour NAAQS PM2.5 standard of 35 µg/m³
 
 **Important caveats:** The Pope et al. 2002 coefficient was derived from chronic long-term exposure studies, not acute events. Its application to exceedance days is a known simplification — it likely overestimates risk for short acute episodes and underestimates it for cities with sustained elevated background levels. These figures are appropriate for order-of-magnitude risk communication and portfolio screening, not for regulatory analysis.
@@ -107,6 +108,8 @@ air-quality-usa/
 ├── regions.csv                   # The 6 metro areas, colours and pollution mechanisms
 ├── events.csv                    # Documented high-AQI events used in Section 6
 ├── requirements.txt
+├── LICENSE                       # MIT
+├── .gitattributes                # Excludes the notebook from GitHub language stats
 ├── .gitignore                    # Excludes .env, raw CSVs, cached Census data, caches
 ├── data/
 │   └── processed/
@@ -131,10 +134,12 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+To open the notebook you also need Jupyter (`pip install jupyterlab`), which is not needed by the dashboard.
+
 The processed Parquet files are committed, so the dashboard and the notebook run without any download except the Census population file (see step 3).
 
 To rebuild everything from the raw EPA data:
-1. Download from [EPA AQS](https://aqs.epa.gov/aqsweb/airdata/download_files.html) the daily PM2.5, ozone and PM10 files for the six metro areas, the daily AQI by CBSA files (`daily_aqi_by_cbsa_{year}.csv`) and the daily wind/temperature files (`daily_WIND_{year}.csv`, `daily_TEMP_{year}.csv`) for 2020–2026 (file names are listed at the top of `etl.py`)
+1. Download from [EPA AQS](https://aqs.epa.gov/aqsweb/airdata/download_files.html) the daily PM2.5, ozone and PM10 files for the six metro areas, the daily AQI by CBSA files (`daily_aqi_by_cbsa_{year}.csv`) and the daily wind/temperature files (`daily_WIND_{year}.csv`, `daily_TEMP_{year}.csv`) for 2020–2026 (the file names `etl.py` expects are listed at the top of that file; rename the EPA downloads accordingly, e.g. `pm25_2020_NewYork.csv`, using the `file_key` names from `regions.csv`)
 2. Place them in `data/` and run `python scripts/build_dataset.py`
 3. Obtain a free Census API key at [api.census.gov/data/key\_signup.html](https://api.census.gov/data/key_signup.html) and add it to `.env` as `CENSUS_KEY=your_key_here`; the notebook downloads and caches county populations in `data/external/` on its first run
 4. Open `air_quality_usa.ipynb` and run all cells
@@ -182,5 +187,5 @@ This project is part of a data science portfolio focused on Climate Risk Analyti
 
 ## Author
 
-**Sheila Alonso** — Data Analyst | Climate Risk & ESG  
+**Sheila Alonso** — Environmental Data Analyst | Climate Risk & Sustainability  
 [GitHub](https://github.com/AlonsoSheila) · [LinkedIn](https://www.linkedin.com/in/sheila-alonso-rodriguez/)

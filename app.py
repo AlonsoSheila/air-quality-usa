@@ -257,7 +257,7 @@ with tabs[0]:
 
     st.divider()
     st.subheader("🎯 Risk Scorecard")
-    st.caption("Summary risk metrics per city · WHO PM2.5 daily guideline: 15 µg/m³ (2021) · EPA 24-hour NAAQS: 35 µg/m³")
+    st.caption("Summary risk metrics per city · WHO PM2.5 daily guideline: 15 µg/m³ (2021) · EPA 24-hour NAAQS: 35 µg/m³ · Mean PM2.5 and WHO-guideline days cover the selected year range")
 
     scorecard_rows = []
     pm25_sc = poll_f[poll_f["pollutant"] == "pm25"]
@@ -271,7 +271,7 @@ with tabs[0]:
         city_pm25_daily = city_pm25_raw.groupby("date")["value"].mean().dropna()
         city_pm25 = city_pm25_daily  # used below for stats
         p98 = float(round(city_pm25.quantile(0.98), 1)) if len(city_pm25) > 10 else None
-        annual_mean = city_pm25.mean() if len(city_pm25) > 10 else None
+        period_mean = city_pm25.mean() if len(city_pm25) > 10 else None
         who_days = int((city_pm25 > 15).sum()) if len(city_pm25) > 10 else None
         who_pct = (who_days / len(city_pm25) * 100) if who_days is not None else None
 
@@ -294,7 +294,7 @@ with tabs[0]:
             "City": CITY_DISPLAY.get(city, city),
             "AQI>150 (%)": round(freq, 1),
             "PM2.5 p98 (µg/m³)": f"{p98:.1f}" if p98 is not None else "—",
-            "Annual mean PM2.5": round(annual_mean, 1) if annual_mean is not None else "—",
+            "Mean PM2.5": round(period_mean, 1) if period_mean is not None else "—",
             "Days > WHO 15µg": who_days if who_days is not None else "—",
             "% days > WHO": round(who_pct, 1) if who_pct is not None else "—",
             "AQI Trend (2020-25)": trend_sc,
@@ -307,7 +307,7 @@ with tabs[0]:
             sc_df.style
             .format({
                 "AQI>150 (%)": "{:.1f}%",
-                "Annual mean PM2.5": "{:.1f}",
+                "Mean PM2.5": "{:.1f}",
                 "% days > WHO": "{:.1f}%",
             })
             .background_gradient(subset=["AQI>150 (%)"], cmap="YlOrRd")
@@ -621,7 +621,6 @@ with tabs[3]:
             year   = int(ev["event_year"])
             month  = int(ev["event_month"])
             label  = ev["event_label"]
-            color  = CITY_COLOR.get(city, "#6b7280")
             mname  = ["Jan","Feb","Mar","Apr","May","Jun",
                       "Jul","Aug","Sep","Oct","Nov","Dec"][month-1]
 
@@ -653,7 +652,6 @@ with tabs[3]:
                 r = np.deg2rad(deg.dropna())
                 return (np.degrees(np.arctan2(np.sin(r).mean(),np.cos(r).mean()))+360)%360
 
-            city_color = CITY_COLOR.get(city, "#6b7280")
             with st.expander(f"**{CITY_DISPLAY.get(city, city)}** — {label} ({mname} {year})"):
                 c1, c2, c3, c4 = st.columns(4)
                 c1.metric("Days AQI > 150", n_over)

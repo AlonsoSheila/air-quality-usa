@@ -10,7 +10,7 @@ An interactive Streamlit dashboard and analytical notebook exploring PM2.5 and A
 
 ## Overview
 
-This project analyses daily PM2.5, PM10 and Ozone measurements for Los Angeles, Seattle, New York, Chicago, Denver and Houston — covering roughly 2,300 days per city (2,251 to 2,344 days of AQI data, January 2020 through spring 2026; the AQI series end between 28 February and 1 June 2026 depending on the city, and the raw pollutant series run to late July 2026). It combines EPA monitoring records with meteorological event data to surface patterns, long-term trends, and risk-relevant insights for climate analytics, insurance and ESG portfolio screening.
+This project analyses daily PM2.5, PM10 and Ozone measurements for Los Angeles, Seattle, New York, Chicago, Denver and Houston — covering roughly 2,300 days per city (2,251 to 2,344 days of AQI data, January 2020 through spring 2026; the AQI series end between 28 February and 1 June 2026 depending on the city, and the raw pollutant series run to late July 2026, except New York's PM10 and PM2.5, which end in March and April). It combines EPA monitoring records with meteorological event data to surface patterns, long-term trends, and risk-relevant insights for climate analytics, insurance and ESG portfolio screening.
 
 Cities are identified by their EPA Core-Based Statistical Area (CBSA): for example, "California" in the internal data refers to the Los Angeles–Long Beach–Anaheim CBSA.
 
@@ -25,7 +25,7 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 
 ## Key Findings
 
-1. **Los Angeles is in a different tier entirely.** Mean AQI 88.8 vs 53.5–69.1 for the other five cities. 10.7% of days exceeded the "Unhealthy" threshold — roughly 4–13× the rate of every other city (Houston: 2.6%, the next highest). This chronic gap, not any single event, is the headline finding.
+1. **Los Angeles is in a different tier entirely.** Mean AQI 88.8 vs 53.5–69.1 for the other five cities. 10.7% of days exceeded the "Unhealthy" threshold — roughly 4–14× the rate of every other city (Houston: 2.6%, the next highest). This chronic gap, not any single event, is the headline finding.
 
 2. **"Worst day" and "worst pattern" are different things.** Seattle has the lowest mean AQI of all six cities (53.5) yet recorded the single highest AQI in the dataset (362, Hazardous, Oct 19 2022) — a city clean most of the year, punctuated by extreme, short-lived wildfire smoke events.
 
@@ -113,7 +113,7 @@ air-quality-usa/
 ├── .gitignore                    # Excludes .env, raw CSVs, cached Census data, caches
 ├── data/
 │   └── processed/
-│       ├── air_quality_usa.parquet   # Daily PM2.5 / PM10 / O3 readings by county
+│       ├── air_quality_usa.parquet   # Daily PM2.5 / PM10 / O3 readings by monitor
 │       ├── aqi_by_cbsa.parquet       # Daily composite AQI by metro area (CBSA)
 │       └── meteo_events.parquet      # Wind (and temperature) for the event months
 ├── docs/

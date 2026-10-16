@@ -257,7 +257,7 @@ with tabs[0]:
 
     st.divider()
     st.subheader("🎯 Risk Scorecard")
-    st.caption("Summary risk metrics per city · WHO PM2.5 daily guideline: 15 µg/m³ (2021) · EPA 24-hour NAAQS: 35 µg/m³ · Mean PM2.5 and WHO-guideline days cover the selected year range")
+    st.caption("Summary risk metrics per city · WHO PM2.5 daily guideline: 15 µg/m³ (2021) · EPA 24-hour NAAQS: 35 µg/m³ · Mean PM2.5 and WHO-guideline days cover the selected year range · AQI>150 and the trend use the AQI series, which ends between Feb and Jun 2026")
 
     scorecard_rows = []
     pm25_sc = poll_f[poll_f["pollutant"] == "pm25"]

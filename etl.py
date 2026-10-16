@@ -161,6 +161,10 @@ def load_meteo_for_events(regions, events, data_dir=DATA_DIR):
     wind = pd.concat(wind_frames, ignore_index=True) if wind_frames else pd.DataFrame()
     temp = pd.concat(temp_frames, ignore_index=True) if temp_frames else pd.DataFrame()
     meteo = pd.concat([wind, temp], ignore_index=True)
+    if meteo.empty:
+        # No wind or temperature files were found: return an empty table with the
+        # expected columns instead of failing further down.
+        return pd.DataFrame(columns=["date", "city", "parameter", "value", "unit"])
 
     # Keep only the rows that fall in each city's event month and year
     keep_masks = []

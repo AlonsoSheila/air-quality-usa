@@ -35,7 +35,7 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 
 5. **The weekday–weekend AQI gap is real in four of six cities.** Houston (+4.50 AQI), Chicago (+4.27), Denver (+3.84) and New York (+3.38) all show positive gaps with 95% CIs entirely above zero. California and Seattle show no detectable gap — both are dominated by wildfire smoke, which has no weekly cycle.
 
-6. **Screening-level health cost estimate: USD 58.1 billion (2020–2026)** across the six metro areas. California accounts for the largest single-year figure (USD 11.2B in 2020). For the June 2023 Quebec smoke event, counting only the documented event days (New York 6–8 June, Chicago 27–28 June), the estimate is USD 5.5B in New York and USD 2.6B in Chicago; counting every PM2.5 exceedance day of 2023 it is USD 7.2B and USD 4.3B, a total that also includes days outside the event windows. On three days alone, New York's event cost is comparable to Seattle's entire 2020 (USD 5.9B).
+6. **Screening-level health cost estimate: USD 58.1 billion and about 4,438 attributable deaths (2020–2026)** across the six metro areas (California 27.3B and 2,081 deaths, Chicago 11.3B and 863, Seattle 9.8B and 750, New York 7.9B and 603, Houston 1.3B and 96, Denver 0.6B and 45). California accounts for the largest single-year figure (USD 11.2B in 2020). For the June 2023 Quebec smoke event, counting only the documented event days (New York 6–8 June, Chicago 27–28 June), the estimate is USD 5.5B in New York and USD 2.6B in Chicago; counting every PM2.5 exceedance day of 2023 it is USD 7.2B and USD 4.3B, a total that also includes days outside the event windows. On three days alone, New York's event cost is comparable to Seattle's entire 2020 (USD 5.9B).
 
 > All health economic figures are screening-level estimates using the Pope et al. 2002 concentration-response function (6%/10 µg/m³) and HHS VSL USD 13.1M (2024). See methodology section below.
 
@@ -51,14 +51,14 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 | **Events** | Documented high-AQI episodes (wildfire smoke, summer ozone) with surface wind context |
 | **Correlations** | PM2.5 vs PM10 scatter with Pearson r by city, and the seasonal offset between PM2.5 and ozone peaks |
 
-> **Note on 2026 data:** 2026 is a partial year and the cut-off differs by city: the AQI series end on 1 Jun (New York), 2 May (Denver), 1 May (Chicago), 30 Apr (Los Angeles), 1 Apr (Houston) and 28 Feb (Seattle) 2026. The sidebar shows these dates. Because a partial year covers only some seasons, trend tests (Mann-Kendall, Theil-Sen) use only the complete years 2020–2025, and the 2026 line is shown dashed.
+> **Note on 2026 data:** 2026 is a partial year and the cut-off differs by city: the AQI series end on 1 Jun (New York), 2 May (Denver), 1 May (Chicago), 30 Apr (Los Angeles), 1 Apr (Houston) and 28 Feb (Seattle) 2026. The sidebar shows these dates. Because a partial year covers only some seasons, trend tests (Mann-Kendall, Theil-Sen) use only the complete years 2020–2025, and the 2026 line is shown dashed. EPA data for 2026 are preliminary and not yet validated.
 
 ---
 
 ## Methodology
 
 ### Trend detection
-- **Mann-Kendall test** for monotonic trend detection, applied to annual mean AQI values (6 points, 2020–2025). Reported as significant at p < 0.05 and marginal at p < 0.10
+- **Mann-Kendall test** for monotonic trend detection (computed with `scipy.stats.kendalltau`), applied to annual mean AQI values (6 points, 2020–2025). Reported as significant at p < 0.05 and marginal at p < 0.10
 - **Theil-Sen slope** (dashboard only) for robust trend magnitude estimation (median of pairwise slopes)
 - The Mann-Kendall test uses the complete years 2020–2025 in the dashboard, the notebook and the executive report (the Theil-Sen slope in the dashboard uses the same years); 2026 is excluded as a partial year (the AQI series end between February and June 2026) to avoid seasonal bias, because it lacks the summer and autumn months when the worst days occur (ozone and wildfire seasons, e.g. Seattle and Los Angeles)
 
@@ -77,10 +77,11 @@ Cities are identified by their EPA Core-Based Statistical Area (CBSA): for examp
 - **Value of Statistical Life (VSL):** USD 13.1 million (2023 USD), U.S. Department of Health and Human Services standard regulatory value (HHS, January 2024)
 - **Baseline mortality:** 833 deaths per 100,000 per year (CDC, 2022), applied uniformly to every city
 - **Threshold:** EPA 24-hour NAAQS PM2.5 standard of 35 µg/m³
+- **Calculation, per county and year:** attributable deaths = county population × baseline mortality × 0.006 × (mean of the monitor readings above 35 µg/m³, minus 35) × (exceedance days ÷ 365); deaths are summed over the counties of each metro area and multiplied by the VSL
 
 **Important caveats:** The Pope et al. 2002 coefficient was derived from chronic long-term exposure studies, not acute events. Its application to exceedance days is a known simplification — it likely overestimates risk for short acute episodes and underestimates it for cities with sustained elevated background levels. These figures are appropriate for order-of-magnitude risk communication and portfolio screening, not for regulatory analysis.
 
-Note: EPA suspended monetization of PM2.5 health benefits in 2026 pending methodology review; HHS VSL is used here as an alternative federal reference value.
+Note: in January 2026 the EPA announced that it would stop monetizing PM2.5 health benefits in its regulatory analyses; the HHS VSL is used here as an alternative federal reference value.
 
 ---
 
@@ -157,9 +158,9 @@ To rebuild everything from the raw EPA data:
 6. Documented Events: Wind Context
 7. Cross-City Correlations
 8. Year-Over-Year Trend
-   - 8.2 Statistical Significance (Mann-Kendall Test)
-9. Weekday vs. Weekend
-10. Resolving Open Questions From Section 4
+   - 8.2 Statistical Significance of Year-over-Year Trends (Mann-Kendall Test)
+9. Weekday vs Weekend
+10. Resolving the Open Questions From Section 4
 11. Health Economic Impact Estimate
     - 11.1 Quebec Smoke Event: Event Days Only
     - Risk Implications for Business and Investment Decisions
@@ -175,7 +176,7 @@ To rebuild everything from the raw EPA data:
 ![Plotly](https://img.shields.io/badge/Plotly-6.9-blueviolet)
 ![Scipy](https://img.shields.io/badge/SciPy-1.17-blue)
 
-Versions are those used for development; the dashboard requires Streamlit 1.51 or newer (see `requirements.txt`).
+Versions are those used for development (the notebook was last executed with Python 3.13); the dashboard requires Streamlit 1.51 or newer (see `requirements.txt`).
 
 Methodology: Exploratory Data Analysis, Statistical Trend Detection (Mann-Kendall / Theil-Sen), Bootstrap Inference, Population-Weighted Exposure Analysis, Health Economic Screening
 

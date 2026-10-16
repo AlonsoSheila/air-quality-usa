@@ -149,7 +149,7 @@ with tabs[0]:
             ratio_txt = (f" — {pct / next_pct:.1f}× more than the next worst city "
                          f"({CITY_DISPLAY.get(next_worst, next_worst)}, {next_pct:.1f}%)"
                          if next_pct > 0 else
-                         f" — the other selected cities have no days above AQI 150")
+                         " — the other selected cities have no days above AQI 150")
             # Is the same city on top in every complete year of the selected range?
             full_years = [y for y in range(year_range[0], min(year_range[1], 2025) + 1)]
             by_year = (aqi_f[aqi_f["date"].dt.year.isin(full_years)]
@@ -194,9 +194,9 @@ with tabs[0]:
         order = summary.sort_values("mean_aqi", ascending=True).index.tolist()
         bar1_df = summary.loc[order].reset_index()
         bar1_df["city"] = bar1_df["city"].map(lambda x: CITY_SHORT.get(x, CITY_DISPLAY.get(x, x)))
-        color_map1 = {CITY_SHORT.get(k, CITY_DISPLAY.get(k,k)): v for k,v in CITY_COLOR.items()}
+        color_map_short = {CITY_SHORT.get(k, CITY_DISPLAY.get(k,k)): v for k,v in CITY_COLOR.items()}
         fig = px.bar(bar1_df, y="city", x="mean_aqi", color="city",
-            color_discrete_map=color_map1, text="mean_aqi", orientation="h",
+            color_discrete_map=color_map_short, text="mean_aqi", orientation="h",
             labels={"mean_aqi": "Mean AQI", "city": ""})
         fig.update_traces(texttemplate="%{text:.0f}", textposition="inside",
             insidetextanchor="end", textfont=dict(color="white", size=12))
@@ -209,9 +209,8 @@ with tabs[0]:
         order2 = summary.sort_values("pct_unhealthy", ascending=True).index.tolist()
         bar2_df = summary.loc[order2].reset_index()
         bar2_df["city"] = bar2_df["city"].map(lambda x: CITY_SHORT.get(x, CITY_DISPLAY.get(x, x)))
-        color_map2 = {CITY_SHORT.get(k, CITY_DISPLAY.get(k,k)): v for k,v in CITY_COLOR.items()}
         fig2 = px.bar(bar2_df, y="city", x="pct_unhealthy", color="city",
-            color_discrete_map=color_map2, text="pct_unhealthy", orientation="h",
+            color_discrete_map=color_map_short, text="pct_unhealthy", orientation="h",
             labels={"pct_unhealthy": "% days", "city": ""})
         fig2.update_traces(texttemplate="%{text:.1f}%", textposition="outside",
             textangle=0, cliponaxis=False, textfont=dict(size=11))
@@ -245,7 +244,9 @@ with tabs[0]:
 
     st.divider()
     st.subheader("Summary Table")
-    st.caption(f"Mean and max values across {year_range[0]}–{year_range[1]}. 'Total days' is the number of days with an AQI value; it differs by city because each city's 2026 series ends on a different date (see sidebar).")
+    _days_note = ("; it differs by city because each city's 2026 series ends on a different date (see sidebar)"
+                  if year_range[1] >= 2026 else "")
+    st.caption(f"Mean and max values across {year_range[0]}–{year_range[1]}. 'Total days' is the number of days with an AQI value{_days_note}.")
     display = summary.copy()
     display.index = [CITY_DISPLAY.get(c, c) for c in display.index]
     display.columns = ["Mean AQI", "Median AQI", "Max AQI", "Unhealthy days", "Total days", "% Unhealthy"]
@@ -268,8 +269,7 @@ with tabs[0]:
 
         city_pm25_raw = pm25_sc[pm25_sc["city"] == city]
         # Aggregate to one daily mean per city (avg across monitors) before computing metrics
-        city_pm25_daily = city_pm25_raw.groupby("date")["value"].mean().dropna()
-        city_pm25 = city_pm25_daily  # used below for stats
+        city_pm25 = city_pm25_raw.groupby("date")["value"].mean().dropna()
         p98 = float(round(city_pm25.quantile(0.98), 1)) if len(city_pm25) > 10 else None
         period_mean = city_pm25.mean() if len(city_pm25) > 10 else None
         who_days = int((city_pm25 > 15).sum()) if len(city_pm25) > 10 else None
@@ -293,9 +293,9 @@ with tabs[0]:
         scorecard_rows.append({
             "City": CITY_DISPLAY.get(city, city),
             "AQI>150 (%)": round(freq, 1),
-            "PM2.5 p98 (µg/m³)": f"{p98:.1f}" if p98 is not None else "—",
+            "PM2.5 p98 (µg/m³)": p98 if p98 is not None else "—",
             "Mean PM2.5 (µg/m³)": round(period_mean, 1) if period_mean is not None else "—",
-            "Days > WHO 15µg": who_days if who_days is not None else "—",
+            "Days > WHO 15 µg/m³": who_days if who_days is not None else "—",
             "% days > WHO": round(who_pct, 1) if who_pct is not None else "—",
             "AQI Trend (2020-25)": trend_sc,
             "Primary driver": driver_short,
@@ -307,12 +307,14 @@ with tabs[0]:
             sc_df.style
             .format({
                 "AQI>150 (%)": "{:.1f}%",
+                "PM2.5 p98 (µg/m³)": "{:.1f}",
                 "Mean PM2.5 (µg/m³)": "{:.1f}",
                 "% days > WHO": "{:.1f}%",
             })
             .background_gradient(subset=["AQI>150 (%)"], cmap="YlOrRd")
             .background_gradient(subset=["% days > WHO"], cmap="YlOrRd"),
-            width="stretch"
+            width="stretch",
+            column_config={"Primary driver": st.column_config.TextColumn(width="large")},
         )
         csv_sc = "\ufeff" + sc_df.reset_index().to_csv(index=False)
         st.download_button(
@@ -368,11 +370,11 @@ with tabs[1]:
                 marker=dict(color="#ef4444", size=6, symbol="circle"),
                 name=f"Unhealthy (n={len(exceed)})"))
         fig_ts.add_hline(y=150, line_dash="dash",
-            line_color="#ef4444", opacity=0.5,
-            annotation_text="AQI 150 threshold",
-            annotation_position="bottom right")
+            line_color="#ef4444", opacity=0.5)
         apply_layout(fig_ts)
+        fig_ts.update_layout(legend=dict(orientation="h", x=0, y=1.12), margin=dict(t=50, b=30, l=10, r=10))
         st.plotly_chart(fig_ts, width="stretch")
+        st.caption("Dashed red line = AQI 150 (Unhealthy threshold).")
 
     with col_b:
         st.subheader("Top 10 Worst Days")
@@ -380,10 +382,12 @@ with tabs[1]:
             ["date", "aqi_composite", "aqi_defining_parameter"]].copy()
         top10["date"] = top10["date"].dt.strftime("%Y-%m-%d")
         top10.columns = ["Date", "AQI", "Pollutant"]
-        st.dataframe(top10, width="stretch", hide_index=True, height=380)
+        st.dataframe(top10, width="stretch", hide_index=True, height=400)
 
     st.divider()
-    col_c, col_d = st.columns(2)
+    # Stacked (not side by side) so the year-by-month heatmap keeps enough width
+    col_c = st.container()
+    col_d = st.container()
 
     with col_c:
         pol_label = POLLUTANT_LABEL.get(selected_pollutant, selected_pollutant)
@@ -427,6 +431,9 @@ with tabs[1]:
             text_auto=".0f", labels=dict(color="Mean AQI"),
             aspect="auto", y=pivot_masked.index.tolist(), height=300)
         apply_layout(fig_hm)
+        fig_hm.update_traces(xgap=1, ygap=1, textfont_size=10)
+        fig_hm.update_xaxes(showgrid=False, tickangle=0, tickfont_size=10)
+        fig_hm.update_yaxes(showgrid=False, dtick=1, type="category")
         st.plotly_chart(fig_hm, width="stretch")
         if year_range[1] == 2026:
             st.caption("2026: blank cells = months with fewer than 5 days of data (the series ends before year-end).")
@@ -436,8 +443,8 @@ with tabs[1]:
 # ═══════════════════════════════════════════════════════════════════════════════
 with tabs[2]:
     st.header("Year-over-Year Trend")
-    partial_note = " · 2026 is a partial year — do not compare directly to full years." if year_range[1] == 2026 else ""
-    st.caption(f"Mean composite AQI per year, {year_range[0]}–{year_range[1]}.{partial_note}")
+    partial_note = " · 2026 is a partial year, do not compare directly to full years." if year_range[1] == 2026 else "."
+    st.caption(f"Mean composite AQI per year, {year_range[0]}–{year_range[1]}{partial_note}")
 
     yearly = (aqi_f.assign(year=aqi_f["date"].dt.year)
               .groupby(["year", "city"])["aqi_composite"].mean().reset_index())
@@ -454,6 +461,7 @@ with tabs[2]:
     else:
         fig_tr = px.line(yearly_full, x="year", y="aqi_composite", color="city",
             color_discrete_map=color_map_tr, markers=True,
+            category_orders={"city": [CITY_DISPLAY.get(c, c) for c in cities_ordered]},
             labels={"aqi_composite": "Mean AQI (composite)", "year": "", "city": "City"})
         # Add 2026 as dashed extension
         for city in yearly["city"].unique():
@@ -466,21 +474,16 @@ with tabs[2]:
                     showlegend=False, hovertemplate=f"{city} (partial year)<extra></extra>"
                 ))
         if year_range[1] == 2026:
-            fig_tr.add_vline(x=2026, line_dash="dot", line_color="#9ca3af",
-                annotation_text="2026 partial", annotation_position="top left")
+            fig_tr.add_vline(x=2026, line_dash="dot", line_color="#9ca3af")
         fig_tr.update_xaxes(tickvals=list(range(year_range[0], year_range[1]+1)),
                             tickformat="d")
         apply_layout(fig_tr, height=380)
         # Reference lines: AQI thresholds
-        fig_tr.add_hline(y=100, line_dash="dot", line_color="#f97316", opacity=0.5,
-            annotation_text="AQI 100", annotation_position="bottom right",
-            annotation_font_size=10, annotation_font_color="#f97316")
-        fig_tr.add_hline(y=50, line_dash="dot", line_color="#22c55e", opacity=0.4,
-            annotation_text="AQI 50", annotation_position="top right",
-            annotation_font_size=10, annotation_font_color="#22c55e")
+        fig_tr.add_hline(y=100, line_dash="dot", line_color="#f97316", opacity=0.5)
+        fig_tr.add_hline(y=50, line_dash="dot", line_color="#22c55e", opacity=0.4)
         st.plotly_chart(fig_tr, width="stretch")
-    st.caption("Reference lines: AQI 100 = Unhealthy for Sensitive Groups threshold (orange) · "
-               "AQI 50 = Good/Moderate boundary (green).")
+        st.caption("Reference lines: AQI 100 = Unhealthy for Sensitive Groups threshold (orange) · "
+                   "AQI 50 = Good/Moderate boundary (green). Dotted segment and vertical line = partial year 2026.")
 
 
     # ── Mann-Kendall trend table (excludes 2026 partial year) ─────────────────
@@ -524,6 +527,8 @@ with tabs[2]:
             width="stretch"
         )
         st.caption("τ: Kendall tau (−1=strong downward, +1=strong upward). Sen slope: median rate of change in AQI/year. ✓ = p<0.05, ~ = p<0.10.")
+    else:
+        st.info("The trend test needs at least 4 complete years (2020–2025) within the selected range. Widen the year range to see it.")
 
     st.divider()
     st.header("Weekday vs Weekend AQI")
@@ -613,6 +618,10 @@ with tabs[3]:
         (events["event_year"] <= year_range[1])
     ].copy()
 
+    def circ_mean(deg):
+        r = np.deg2rad(deg.dropna())
+        return (np.degrees(np.arctan2(np.sin(r).mean(),np.cos(r).mean()))+360)%360
+
     if events_sel.empty:
         st.info(f"No documented events within {year_range[0]}–{year_range[1]} for the selected cities.")
     else:
@@ -632,11 +641,14 @@ with tabs[3]:
 
             ev_key_ny  = (city=="New York" and year==2023 and month==6)
             ev_key_chi = (city=="Chicago"  and year==2023 and month==6)
+            wind_scope = "month"
             if ev_key_ny:
+                wind_scope = "documented event days (6–8 June)"
                 wind_sub = meteo[(meteo["city"]==city) &
                                  (meteo["date"]>="2023-06-06") &
                                  (meteo["date"]<="2023-06-08")]
             elif ev_key_chi:
+                wind_scope = "documented event days (27–28 June)"
                 wind_sub = meteo[(meteo["city"]==city) &
                                  (meteo["date"]>="2023-06-27") &
                                  (meteo["date"]<="2023-06-28")]
@@ -648,10 +660,6 @@ with tabs[3]:
             wind_speed = wind_sub[wind_sub["parameter"]=="Wind Speed - Resultant"]["value"]
             wind_dir   = wind_sub[wind_sub["parameter"]=="Wind Direction - Resultant"]["value"]
 
-            def circ_mean(deg):
-                r = np.deg2rad(deg.dropna())
-                return (np.degrees(np.arctan2(np.sin(r).mean(),np.cos(r).mean()))+360)%360
-
             with st.expander(f"**{CITY_DISPLAY.get(city, city)}** — {label} ({mname} {year})"):
                 c1, c2, c3, c4 = st.columns(4)
                 c1.metric("Days AQI > 150", n_over)
@@ -660,7 +668,7 @@ with tabs[3]:
                     c3.metric("Mean wind speed", f"{wind_speed.mean():.1f} kt")
                 if len(wind_dir):
                     c4.metric("Wind direction", f"{circ_mean(wind_dir):.0f}°")
-                st.caption(f"Defining parameter: {ev['defining_parameter']}")
+                st.caption(f"Defining parameter: {ev['defining_parameter']} · Wind: mean over the {wind_scope}")
 
     st.divider()
     st.header("Worst AQI Days per City")
@@ -689,8 +697,9 @@ with tabs[4]:
     ncols = min(3, len(cities_ordered))
     nrows = -(-len(cities_ordered) // ncols)
     fig_corr = make_subplots(rows=nrows, cols=ncols,
-        subplot_titles=cities_ordered, horizontal_spacing=0.1, vertical_spacing=0.15)
+        subplot_titles=[CITY_SHORT.get(c, CITY_DISPLAY.get(c, c)) for c in cities_ordered], horizontal_spacing=0.1, vertical_spacing=0.15)
 
+    valid_by_city = {}
     for idx, city in enumerate(cities_ordered):
         row = idx // ncols + 1
         col = idx % ncols + 1
@@ -698,6 +707,7 @@ with tabs[4]:
         wide = city_data.pivot_table(index="date", columns="pollutant", values="value")
         if {"pm25","pm10"}.issubset(wide.columns):
             valid = wide[["pm25","pm10"]].dropna()
+            valid_by_city[city] = valid
             r = valid["pm25"].corr(valid["pm10"]) if len(valid)>10 else float("nan")
             c = CITY_COLOR.get(city, "#6b7280")
             if len(valid) < 3:
@@ -733,7 +743,9 @@ with tabs[4]:
         showline=True, linecolor="#e5e7eb", range=[0, y_max])
     for row in range(1, nrows+1):
         fig_corr.update_yaxes(title_text="PM10 (µg/m³)", row=row, col=1)
-    st.caption("Axes use a shared scale (99th percentile) to allow direct visual comparison across cities.")
+    n_outside = sum(int(((v["pm25"] > x_max) | (v["pm10"] > y_max)).sum()) for v in valid_by_city.values())
+    st.caption("Axes use a shared scale (99th percentile) to allow direct visual comparison across cities."
+               + (f" {n_outside:,} paired days with higher values fall outside the axes but are included in r." if n_outside else ""))
     st.plotly_chart(fig_corr, width="stretch")
 
     # Paired-days note (computed for the current selection)
@@ -750,7 +762,7 @@ with tabs[4]:
         if others_n and paired_n["New York"] < min(others_n.values()):
             comparison = (f" — fewer than any other selected city "
                           f"({min(others_n.values()):,} to {max(others_n.values()):,} days)")
-            tail = " Its PM10 monitoring network is smaller; the correlation is real but less certain."
+            tail = " Its PM10 monitoring network is smaller; the correlation rests on fewer days, so treat it with caution."
         else:
             comparison, tail = "", ""
         st.caption(f"Note: New York's r={ny_r:.2f} is based on {paired_n['New York']:,} paired PM2.5/PM10 days{comparison}.{tail}")

@@ -8,3 +8,8 @@ data/external/
 # Python / Jupyter
 .ipynb_checkpoints/
 __pycache__/
+.venv/
+venv/
+
+# OS files
+.DS_Store

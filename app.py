@@ -294,7 +294,7 @@ with tabs[0]:
             "City": CITY_DISPLAY.get(city, city),
             "AQI>150 (%)": round(freq, 1),
             "PM2.5 p98 (µg/m³)": f"{p98:.1f}" if p98 is not None else "—",
-            "Mean PM2.5": round(period_mean, 1) if period_mean is not None else "—",
+            "Mean PM2.5 (µg/m³)": round(period_mean, 1) if period_mean is not None else "—",
             "Days > WHO 15µg": who_days if who_days is not None else "—",
             "% days > WHO": round(who_pct, 1) if who_pct is not None else "—",
             "AQI Trend (2020-25)": trend_sc,
@@ -307,7 +307,7 @@ with tabs[0]:
             sc_df.style
             .format({
                 "AQI>150 (%)": "{:.1f}%",
-                "Mean PM2.5": "{:.1f}",
+                "Mean PM2.5 (µg/m³)": "{:.1f}",
                 "% days > WHO": "{:.1f}%",
             })
             .background_gradient(subset=["AQI>150 (%)"], cmap="YlOrRd")
@@ -498,7 +498,7 @@ with tabs[2]:
         vals = city_data["aqi_composite"].values
         years = city_data["year"].values
         tau, p_val = scipy_stats.kendalltau(range(len(vals)), vals)
-        slope, intercept, low, high = scipy_stats.theilslopes(vals, years)
+        slope, _, _, _ = scipy_stats.theilslopes(vals, years)
         sig = "✓ p<0.05" if p_val < 0.05 else ("~ p<0.10" if p_val < 0.10 else "—")
         direction = "↓ Down" if tau < 0 and p_val < 0.10 else ("↑ Up" if tau > 0 and p_val < 0.10 else "— No trend")
         mk_rows.append({
